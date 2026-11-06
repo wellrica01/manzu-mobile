@@ -1,6 +1,7 @@
 name: Mobile
 
 on:
+  workflow_dispatch:
   pull_request:
     paths: ['mobile/**', '.github/workflows/mobile.yml']
   push:
