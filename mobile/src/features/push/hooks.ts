@@ -11,13 +11,18 @@ import { PUSH_ENABLED } from '@/lib/flags';
 
 import { getPushPermission, hrefForNotification, pushAvailability, registerForPush, type PushAvailability, type PushPermission } from './notifications';
 
-/** Registers this device once per signed-in user per launch, so the most recently used device receives pushes (D6). */
+/** Registers this device once per signed-in user per launch (the backend keeps one row per device, so every signed-in device gets pushes). */
 export function usePushRegistration() {
   const userId = useSession((s) => s.user?.id);
   const registeredFor = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!userId || registeredFor.current === userId || pushAvailability() !== 'available') return;
+    // Signed out: forget who we registered, so signing back in as the same user registers again.
+    if (!userId) {
+      registeredFor.current = null;
+      return;
+    }
+    if (registeredFor.current === userId || pushAvailability() !== 'available') return;
     registeredFor.current = userId;
     registerForPush({ prompt: true }).catch((e: unknown) => {
       registeredFor.current = null;
