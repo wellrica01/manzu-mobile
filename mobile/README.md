@@ -35,4 +35,4 @@ npm run lint               # also fails on forbidden endpoints (PLAN.md §4)
 2. Set build env vars in EAS: `EXPO_PUBLIC_API_URL`, and `GOOGLE_MAPS_API_KEY` for Android maps. `app.config.ts` reads them at build time.
 3. `npx eas-cli@latest build --profile development --platform android` (or `preview` / `production`).
 
-Push notifications are behind `EXPO_PUBLIC_PUSH_ENABLED=true` and don't work in Expo Go on Android (SDK 53+). They register through the existing single-token endpoint (PLAN D6). The backend doesn't send pushes yet (G4). A tapped notification with `data.orderId` opens that order.
+Push notifications are behind `EXPO_PUBLIC_PUSH_ENABLED=true` and don't work in Expo Go on Android (SDK 53+). Each device registers with `POST /api/pharmacy/push-tokens` and is removed with `DELETE /api/pharmacy/push-tokens/:token` on logout (G4). The backend sends a push when an order is paid; a tapped notification with `data.orderId` opens that order. Turn the flag on only after the backend with the push endpoints is deployed.

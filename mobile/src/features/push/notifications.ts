@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 import { PUSH_ENABLED } from '@/lib/flags';
 import { colors } from '@/theme';
 
-import { registerDeviceToken } from './api';
+import { registerPushToken, unregisterPushToken } from './api';
 
 export const ORDERS_CHANNEL_ID = 'orders';
 
@@ -50,6 +50,9 @@ async function ensureAndroidChannel(): Promise<void> {
   });
 }
 
+/** The token this launch registered with the backend, kept so logout can unregister exactly this device. */
+let registeredPushToken: string | null = null;
+
 export interface PushPermission {
   granted: boolean;
   canAskAgain: boolean;
@@ -61,8 +64,8 @@ export async function getPushPermission(): Promise<PushPermission> {
 }
 
 /**
- * Gets an Expo push token and stores it on the pharmacy. `prompt` asks for permission when it is still undetermined.
- * Returns whether a token was registered.
+ * Gets an Expo push token and registers this device with the backend (G4, one row per device).
+ * `prompt` asks for permission when it is still undetermined. Returns whether a token was registered.
  */
 export async function registerForPush({ prompt }: { prompt: boolean }): Promise<boolean> {
   if (pushAvailability() !== 'available') return false;
@@ -71,13 +74,29 @@ export async function registerForPush({ prompt }: { prompt: boolean }): Promise<
   if (!permission.granted && permission.canAskAgain && prompt) permission = await Notifications.requestPermissionsAsync();
   if (!permission.granted) return false;
   const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId: easProjectId() });
-  await registerDeviceToken(token);
+  await registerPushToken(token, Platform.OS === 'ios' ? 'ios' : 'android');
+  registeredPushToken = token;
   return true;
 }
 
 /**
- * Deep-link target for a tapped notification. No backend sender exists yet (G4); the agreed payload is
- * `data: { orderId: number | string }` for order notifications.
+ * Tells the backend to stop pushing to this device (call on user-initiated logout, while the session token is still valid).
+ * No-op when push is off. If this launch never registered, falls back to the device's own token when permission was granted.
+ */
+export async function unregisterThisDevice(): Promise<void> {
+  let token = registeredPushToken;
+  if (!token && pushAvailability() === 'available') {
+    const permission = await Notifications.getPermissionsAsync();
+    if (permission.granted) token = (await Notifications.getExpoPushTokenAsync({ projectId: easProjectId() })).data;
+  }
+  if (!token) return;
+  await unregisterPushToken(token);
+  registeredPushToken = null;
+}
+
+/**
+ * Deep-link target for a tapped notification. The backend sender (G4) sends
+ * `data: { type: 'order', orderId: number }` for new paid orders.
  */
 export function hrefForNotification(data: Record<string, unknown> | undefined): Href | null {
   const raw = data?.orderId;

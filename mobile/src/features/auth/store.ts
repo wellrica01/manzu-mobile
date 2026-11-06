@@ -3,6 +3,7 @@ import { create } from 'zustand';
 
 import { clearQueryCache } from '@/api/queryClient';
 import type { ProfileResponse } from '@/features/profile/types';
+import { unregisterThisDevice } from '@/features/push/notifications';
 import { decodePharmacyToken, isTokenExpired } from '@/lib/jwt';
 
 import { SESSION_EXPIRED_MESSAGE } from './messages';
@@ -10,6 +11,23 @@ import type { LoginResponse, SessionPharmacy, SessionUser } from './types';
 
 const TOKEN_KEY = 'manzu.pharmacyToken';
 const SESSION_KEY = 'manzu.session';
+/** Logout must never hang on a slow network while unregistering the push token. */
+const PUSH_UNREGISTER_TIMEOUT_MS = 3000;
+
+async function unregisterPushQuietly(): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, PUSH_UNREGISTER_TIMEOUT_MS);
+  });
+  try {
+    await Promise.race([unregisterThisDevice(), timeout]);
+  } catch {
+    // Best effort: the backend also drops tokens that Expo reports as unregistered.
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 const secureOptions: SecureStore.SecureStoreOptions = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY };
 
 type Status = 'loading' | 'signedOut' | 'signedIn';
@@ -126,6 +144,9 @@ export const useSession = create<SessionState>()((set, get) => ({
 
   signOut: async (message) => {
     if (get().status === 'signedOut' && !message) return;
+    // User-initiated logout only: the session token is still valid, so ask the backend to stop pushing to this device.
+    // Skipped when `message` is set (expired/invalid session): the request would 401 and re-enter signOut.
+    if (!message && get().status === 'signedIn') await unregisterPushQuietly();
     set({ ...signedOutState, authMessage: message ?? null });
     await Promise.allSettled([wipeSecureStorage(), clearQueryCache()]);
   },

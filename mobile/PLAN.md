@@ -231,4 +231,4 @@ Blocking items by milestone: **M1** → C8, S11 · **M3** → C3, C4 · **M7** �
 - **D3** — managers can assign PHARMACIST, STAFF and TECHNICIAN only.
 - **D4** — non-VERIFIED pharmacies get the same access as on the web, plus a status banner.
 - **D5** — daily re-login (1-day JWT) until refresh tokens (G2) exist. The app signs out when `exp` passes.
-- **D6** — push uses the existing `POST /api/pharmacy/notifications/register {deviceToken}` (last device wins; no server-side sender yet, G4).
+- **D6** — *(superseded by Task 3 / G4)* push originally used the single-token `POST /api/pharmacy/notifications/register {deviceToken}`. The app now uses `POST /api/pharmacy/push-tokens {token, platform}` (one row per device) and `DELETE /api/pharmacy/push-tokens/:token` on logout; the backend sends a push when an order is paid.
