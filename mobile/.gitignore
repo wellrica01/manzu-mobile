@@ -12,3 +12,6 @@ expo-env.d.ts
 *.mobileprovision
 ios/
 android/
+
+# Firebase admin service account keys (private - never commit)
+*firebase-adminsdk*.json

@@ -12,5 +12,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     slug: config.slug ?? 'manzu-pharmacy',
     plugins,
     extra: { ...config.extra, ...(projectId ? { eas: { projectId } } : {}) },
+    android: {
+    ...config.android,
+    googleServicesFile: './google-services.json', // Add this line
+  },
   };
 };

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "311440574554",
+    "project_id": "manzu-545b1",
+    "storage_bucket": "manzu-545b1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:311440574554:android:0e8a6a1a934e4866a8f063",
+        "android_client_info": {
+          "package_name": "ng.manzu.pharmacy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXFpNdQHpHl8DenbID7MOZPcOTIMYExvw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
