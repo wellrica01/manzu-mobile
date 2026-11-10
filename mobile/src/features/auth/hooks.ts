@@ -4,8 +4,7 @@ import { useEffect } from 'react';
 import { profileQueryOptions } from '@/features/profile/api';
 import { isManager } from '@/lib/roles';
 
-import { login, register } from './api';
-import { SESSION_EXPIRED_MESSAGE } from './messages';
+import { getMe, login, register } from './api';
 import { useRole, useSession } from './store';
 import type { LoginRequest, RegisterRequest } from './types';
 
@@ -27,16 +26,25 @@ export function useRegister() {
 }
 
 /**
- * Validates the stored token on launch / foreground via GET /api/pharmacy/profile
- * (manzu-b has no /api/auth/verify). A 401 signs out via the API client hook.
- * Also signs out when the JWT's exp passes (no refresh tokens: daily re-login, PLAN D5).
+ * Validates the stored session on launch / foreground via GET /api/auth/me (G1).
+ * The refresh flow handles expired access tokens automatically; if refresh fails, the
+ * store transitions to signedOut with a message and the router guard switches to (auth).
+ * Also re-applies the profile data via the profile query (unchanged behaviour for the UI).
  */
 export function useSessionValidation() {
   const status = useSession((s) => s.status);
-  const expiresAt = useSession((s) => s.expiresAt);
   const applyProfile = useSession((s) => s.applyProfile);
-  const signOut = useSession((s) => s.signOut);
 
+  const me = useQuery({
+    queryKey: ['auth', 'me'],
+    queryFn: () => getMe(),
+    enabled: status === 'signedIn',
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  // Keep the profile cache warm too: many screens read `profileQueryOptions` for pharmacy extras
+  // (operating hours, licenseNumber, etc.). /me is smaller and refreshes the session-critical fields.
   const profile = useQuery({
     ...profileQueryOptions,
     enabled: status === 'signedIn',
@@ -46,19 +54,7 @@ export function useSessionValidation() {
     if (profile.data) void applyProfile(profile.data);
   }, [profile.data, applyProfile]);
 
-  useEffect(() => {
-    if (status !== 'signedIn' || !expiresAt) return;
-    const ms = expiresAt - Date.now();
-    if (ms <= 0) {
-      void signOut(SESSION_EXPIRED_MESSAGE);
-      return;
-    }
-    // setTimeout overflows above ~24.8 days; JWTs here last 1 day.
-    const timer = setTimeout(() => void signOut(SESSION_EXPIRED_MESSAGE), Math.min(ms, 2_147_000_000));
-    return () => clearTimeout(timer);
-  }, [status, expiresAt, signOut]);
-
-  return profile;
+  return { me, profile };
 }
 
 export function useIsManager(): boolean {

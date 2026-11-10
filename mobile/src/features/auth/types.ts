@@ -12,8 +12,10 @@ export interface LoginRequest {
 export interface LoginResponse {
   message: string;
   token: string;
+  refreshToken: string;
   user: { id: number; email: string; name: string; role: PharmacyUserRole };
-  pharmacy: { id: number; name: string };
+  // G11: status and isActive are returned by the backend (not blocked, app shows a banner — PLAN D4).
+  pharmacy: { id: number; name: string; status?: PharmacyStatus; isActive?: boolean };
 }
 
 export interface SessionUser {
@@ -29,6 +31,30 @@ export interface SessionPharmacy {
   status?: PharmacyStatus;
   isActive?: boolean;
   logoUrl?: string | null;
+}
+
+// POST /api/auth/refresh — rotates the refresh token (G2).
+export interface RefreshRequest {
+  refreshToken: string;
+}
+
+export interface RefreshResponse {
+  message: string;
+  token: string;
+  refreshToken: string;
+  user: { id: number; name: string; email: string; role: PharmacyUserRole };
+  pharmacy: { id: number; name: string; status?: PharmacyStatus; isActive?: boolean; logoUrl?: string | null };
+}
+
+// POST /api/auth/logout — revokes the whole login chain. Idempotent.
+export interface LogoutRequest {
+  refreshToken: string;
+}
+
+// GET /api/auth/me — current user + pharmacy (G1).
+export interface MeResponse {
+  user: { id: number; name: string; email: string; role: PharmacyUserRole };
+  pharmacy: { id: number; name: string; status?: PharmacyStatus; isActive?: boolean; logoUrl?: string | null };
 }
 
 // POST /api/auth/register — manzu-b registerSchema. Creates the pharmacy (PENDING) and its MANAGER user.
