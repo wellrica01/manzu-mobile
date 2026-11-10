@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { analyticsKeys, fetchAnalyticsInventory, fetchAnalyticsOrders } from './api';
+import { analyticsKeys, fetchAnalytics, resolveAnalyticsRange } from './api';
+import type { AnalyticsRange } from './types';
 
-export function useAnalyticsOrders() {
-  return useQuery({ queryKey: analyticsKeys.orders(), queryFn: ({ signal }) => fetchAnalyticsOrders(signal) });
-}
-
-export function useAnalyticsInventory() {
-  return useQuery({ queryKey: analyticsKeys.inventory(), queryFn: ({ signal }) => fetchAnalyticsInventory(signal) });
+export function useAnalytics(range: AnalyticsRange, customStart: string, customEnd: string) {
+  const { from, to } = resolveAnalyticsRange(range, customStart, customEnd);
+  return useQuery({
+    queryKey: analyticsKeys.query(range, from ?? '', to ?? ''),
+    queryFn: ({ signal }) => fetchAnalytics({ from, to }, signal),
+  });
 }

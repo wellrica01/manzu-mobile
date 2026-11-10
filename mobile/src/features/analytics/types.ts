@@ -31,3 +31,18 @@ export interface InventoryHealth {
   outOfStock: number;
   totalValue: number;
 }
+
+/** GET /api/pharmacy/analytics response (backend Task 6 / G8). */
+export interface AnalyticsResponse {
+  period: { from: string; to: string };
+  totalRevenue: number;
+  totalOrders: number;
+  avgOrderValue: number;
+  uniqueCustomers: number;
+  returningCustomers: number;
+  retentionRate: number;
+  statusCounts: { status: string; count: number }[];
+  topMedications: TopMedication[];
+  revenueByDay: DailyRevenue[];
+  inventoryHealth: InventoryHealth;
+}
