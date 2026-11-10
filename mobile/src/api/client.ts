@@ -18,10 +18,11 @@ export interface RequestOptions {
 
 interface ClientHooks {
   getToken: () => string | null;
-  onUnauthorized: (error: ApiError) => void;
+  /** Attempt refresh. Resolves true if a new access token is now available. */
+  onUnauthorized: () => Promise<boolean>;
 }
 
-let hooks: ClientHooks = { getToken: () => null, onUnauthorized: () => {} };
+let hooks: ClientHooks = { getToken: () => null, onUnauthorized: async () => false };
 
 export function configureApiClient(next: ClientHooks): void {
   hooks = next;
@@ -41,12 +42,17 @@ export function assertAllowedPath(path: string): void {
   }
 }
 
-export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  assertAllowedPath(path);
-  if (!API_BASE_URL) {
-    throw new ApiError('API URL is not configured (EXPO_PUBLIC_API_URL).', 0, 'NOT_CONFIGURED');
-  }
+interface InternalRequestResult<T> {
+  ok: true;
+  value: T;
+}
+interface InternalRequestFailure {
+  ok: false;
+  error: ApiError;
+  status: number;
+}
 
+async function doFetch<T>(path: string, options: RequestOptions): Promise<InternalRequestResult<T> | InternalRequestFailure> {
   const { method = 'GET', body, formData, query, auth = true, signal, timeoutMs = REQUEST_TIMEOUT_MS } = options;
   const headers: Record<string, string> = { Accept: options.responseType === 'text' ? 'text/csv, text/plain, */*' : 'application/json' };
   if (body !== undefined && !formData) headers['Content-Type'] = 'application/json';
@@ -72,9 +78,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       signal: controller.signal,
     });
   } catch (err) {
-    if (timedOut) throw new ApiError('The request timed out. Check your connection and try again.', 0, 'TIMEOUT');
+    if (timedOut) return { ok: false, error: new ApiError('The request timed out. Check your connection and try again.', 0, 'TIMEOUT'), status: 0 };
     if (signal?.aborted) throw err;
-    throw new ApiError("Can't reach the server. Check your connection and try again.", 0, 'NETWORK_ERROR');
+    return { ok: false, error: new ApiError("Can't reach the server. Check your connection and try again.", 0, 'NETWORK_ERROR'), status: 0 };
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener('abort', onAbort);
@@ -91,10 +97,29 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   if (!response.ok) {
-    const error = normalizeErrorBody(response.status, parsed);
-    if (response.status === 401 && auth && token) hooks.onUnauthorized(error);
-    throw error;
+    return { ok: false, error: normalizeErrorBody(response.status, parsed), status: response.status };
   }
 
-  return (options.responseType === 'text' ? text : parsed) as T;
+  return { ok: true, value: (options.responseType === 'text' ? text : parsed) as T };
+}
+
+export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  assertAllowedPath(path);
+  if (!API_BASE_URL) {
+    throw new ApiError('API URL is not configured (EXPO_PUBLIC_API_URL).', 0, 'NOT_CONFIGURED');
+  }
+
+  const auth = options.auth !== false;
+  let result = await doFetch<T>(path, options);
+
+  // On 401 with a Bearer token, try to refresh once, then retry the request once.
+  if (!result.ok && auth && result.status === 401) {
+    const refreshed = await hooks.onUnauthorized();
+    if (refreshed) {
+      result = await doFetch<T>(path, options);
+    }
+  }
+
+  if (!result.ok) throw result.error;
+  return result.value;
 }

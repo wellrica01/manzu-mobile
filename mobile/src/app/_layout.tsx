@@ -17,7 +17,6 @@ import Toast from 'react-native-toast-message';
 import { configureApiClient } from '@/api/client';
 import { bindReactQueryNativeListeners, persistOptions, queryClient } from '@/api/queryClient';
 import { toastConfig } from '@/components/toast/toastConfig';
-import { authMessageFor } from '@/features/auth/messages';
 import { useSession } from '@/features/auth/store';
 import { configureNotificationHandler } from '@/features/push/notifications';
 
@@ -26,7 +25,7 @@ bindReactQueryNativeListeners();
 configureNotificationHandler();
 configureApiClient({
   getToken: () => useSession.getState().token,
-  onUnauthorized: (error) => void useSession.getState().signOut(authMessageFor(error)),
+  onUnauthorized: () => useSession.getState().refreshSession().then((t) => !!t),
 });
 
 export default function RootLayout() {
