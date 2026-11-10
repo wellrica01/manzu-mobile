@@ -56,7 +56,14 @@ export function useUpdateOrderStatus() {
       if (status === 'CANCELLED') {
         const res = await bulkUpdateOrders({ orderIds: [orderId], status, cancelReason });
         const failure = res.results.failed[0];
-        if (failure) throw new Error(failure.reason);
+        if (failure) {
+          // Preserve the semantic from the backend message so callers can act on the code,
+          // matching the shape apiRequest already throws for single-order PATCH.
+          const err = new Error(failure.reason) as Error & { code?: string };
+          if (/Cannot move order from/i.test(failure.reason)) err.code = 'INVALID_STATUS_TRANSITION';
+          if (/already in .* status/i.test(failure.reason)) err.code = 'STATUS_UNCHANGED';
+          throw err;
+        }
         return res;
       }
       return updateOrderStatus(orderId, { status });
