@@ -52,7 +52,6 @@
           "microphonePermission": false
         }
       ],
-      "react-native-maps",
       [
         "expo-notifications",
         {
