@@ -38,9 +38,16 @@ export function toExportQuery(filters: SalesFilters): SalesExportQuery {
 
 export type QuickDate = 'today' | 'yesterday' | 'week' | 'month';
 
-/** UTC calendar date, as the web's toISOString().split('T')[0]. */
-function utcIso(d: Date): string {
-  return d.toISOString().split('T')[0] ?? '';
+/**
+ * Local calendar date (YYYY-MM-DD). Using toISOString() would return the previous day
+ * in UTC+ zones (e.g. local Nov 1 00:00 WAT → Oct 31 UTC), making "this month" start
+ * on Oct 31 in Nigeria.
+ */
+function localIso(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 /** sales-history/page.jsx setQuickDateFilter. */
@@ -48,19 +55,19 @@ export function quickDateFilters(type: QuickDate | 'clear'): Pick<SalesFilters, 
   const today = new Date();
   switch (type) {
     case 'today':
-      return { date: utcIso(today), startDate: '', endDate: '' };
+      return { date: localIso(today), startDate: '', endDate: '' };
     case 'yesterday': {
       const y = new Date(today);
       y.setDate(y.getDate() - 1);
-      return { date: utcIso(y), startDate: '', endDate: '' };
+      return { date: localIso(y), startDate: '', endDate: '' };
     }
     case 'week': {
       const start = new Date(today);
       start.setDate(today.getDate() - 7);
-      return { date: '', startDate: utcIso(start), endDate: utcIso(today) };
+      return { date: '', startDate: localIso(start), endDate: localIso(today) };
     }
     case 'month':
-      return { date: '', startDate: utcIso(new Date(today.getFullYear(), today.getMonth(), 1)), endDate: utcIso(today) };
+      return { date: '', startDate: localIso(new Date(today.getFullYear(), today.getMonth(), 1)), endDate: localIso(today) };
     case 'clear':
       return { date: '', startDate: '', endDate: '' };
   }
