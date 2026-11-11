@@ -65,5 +65,10 @@
     "test": "jest",
     "test:watch": "jest --watch"
   },
+  "expo": {
+    "install": {
+      "exclude": ["jest", "ts-jest", "@types/jest"]
+    }
+  },
   "private": true
 }
