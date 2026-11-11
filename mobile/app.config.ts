@@ -1,12 +1,9 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const mapsKey = process.env.GOOGLE_MAPS_API_KEY;
   const projectId = process.env.EAS_PROJECT_ID;
 
-  const plugins: ExpoConfig['plugins'] = [...(config.plugins ?? [])].map((plugin) =>
-    plugin === 'react-native-maps' && mapsKey ? ['react-native-maps', { androidGoogleMapsApiKey: mapsKey }] : plugin,
-  );
+  const plugins: ExpoConfig['plugins'] = [...(config.plugins ?? [])];
 
   // Add expo-build-properties to fix R8 stripping WorkDatabase_Impl in release builds
   plugins.push([
