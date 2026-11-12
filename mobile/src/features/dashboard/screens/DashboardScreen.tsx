@@ -11,6 +11,7 @@ import { profileKeys, profileQueryOptions } from '@/features/profile/api';
 import { PharmacyStatusBanner } from '@/features/profile/components/PharmacyStatusBanner';
 import { formatDateTime } from '@/lib/format';
 import { colors, radius } from '@/theme';
+import { useIsManager } from '@/features/auth/hooks';
 
 import { dashboardKeys, dashboardQueryOptions } from '../api';
 import { MetricCard, OnlineOrdersCard } from '../components/MetricCards';
@@ -21,6 +22,7 @@ import { InventoryStatusCard, RevenueTodayCard } from '../components/SummaryCard
 // Mirrors manzu-f app/pharmacy/(dashboard)/dashboard/page.jsx, stacked vertically.
 export function DashboardScreen() {
   const router = useRouter();
+  const manager = useIsManager();
   const queryClient = useQueryClient();
   const dashboard = useQuery(dashboardQueryOptions);
   const profile = useQuery(profileQueryOptions);
@@ -76,14 +78,21 @@ export function DashboardScreen() {
           />
           <OnlineOrdersCard
             ordersToday={data.ordersToday || 0}
-            trend={data.revenueTrend || 0}
+            trend={manager ? data.revenueTrend || 0 : 0}
             pending={data.pendingOrders || 0}
             processing={data.processingOrders || 0}
             completed={data.completedOrders || 0}
             onPress={() => router.push('/orders')}
           />
-          <RevenueTodayCard revenue={(data.revenueToday || 0) + (data.posRevenueToday || 0)} transactions={(data.ordersToday || 0) + (data.posSalesToday || 0)} />
-          <PayoutSummaryWidget />
+            {manager ? (
+              <>
+                <RevenueTodayCard
+                  revenue={(data.revenueToday || 0) + (data.posRevenueToday || 0)}
+                  transactions={(data.ordersToday || 0) + (data.posSalesToday || 0)}
+                />
+                <PayoutSummaryWidget />
+              </>
+            ) : null}
           <InventoryStatusCard lowStock={data.inventoryAlerts || 0} expiring={data.expiringMeds || 0} onPress={() => router.push('/inventory')} />
           <TopSellingCard medications={data.topSellingMeds ?? []} />
           <LowStockCard medications={data.lowStockMeds ?? []} />

@@ -28,9 +28,11 @@ export function TopSellingCard({ medications }: { medications: TopSellingMed[] }
                 {med.orders} orders • {med.quantity} units
               </Text>
             </View>
-            <Text size="base" weight="bold" color={colors.green600}>
-              {formatNairaShort(med.revenue)}
-            </Text>
+            {med.revenue !== undefined ? (
+              <Text size="base" weight="bold" color={colors.green600}>
+                {formatNairaShort(med.revenue)}
+              </Text>
+            ) : null}
           </View>
         ))}
         {medications.length === 0 ? (

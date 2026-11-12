@@ -73,9 +73,11 @@ export function RecentActivityCard({ activity }: { activity: RecentActivity[] })
                       {formatShortDateTime(item.time)}
                     </Text>
                   </View>
-                  <Text size="base" weight="bold" color={colors.green600}>
-                    {formatNairaShort(item.amount)}
-                  </Text>
+                  {item.amount !== undefined ? (
+                    <Text size="base" weight="bold" color={colors.green600}>
+                      {formatNairaShort(item.amount)}
+                    </Text>
+                  ) : null}
                 </View>
               </View>
             );

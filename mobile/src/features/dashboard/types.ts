@@ -10,7 +10,7 @@ export interface RecentActivity {
   name: string | null;
   /** OrderStatus for orders; uppercased Sale.paymentMethod (CASH/CARD) or 'PAID' for sales. */
   status: string;
-  amount: number | null;
+  amount?: number | null;
   /** ISO DateTime. */
   time: string;
 }
@@ -18,7 +18,7 @@ export interface RecentActivity {
 export interface TopSellingMed {
   name: string;
   quantity: number;
-  revenue: number;
+  revenue?: number;
   orders: number;
 }
 
@@ -35,10 +35,10 @@ export interface DashboardResponse {
   ordersTrend: number;
   posSalesToday: number;
   posSalesTrend: number;
-  revenueToday: number;
-  revenueTrend: number;
-  posRevenueToday: number;
-  posRevenueTrend: number;
+  revenueToday?: number;
+  revenueTrend?: number;
+  posRevenueToday?: number;
+  posRevenueTrend?: number;
   /** Count of CONFIRMED orders (shown as "Pending" on the web). */
   pendingOrders: number;
   processingOrders: number;

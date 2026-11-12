@@ -18,8 +18,8 @@ interface MoreItem {
 // Remaining SidebarNav entries (same labels/icons); Staff is new and MANAGER-only.
 const ITEMS: MoreItem[] = [
   { href: '/sales-history', label: 'Sales History', icon: Package },
-  { href: '/analytics', label: 'Analytics', icon: BarChart2 },
-  { href: '/payment', label: 'Payment', icon: CreditCard },
+  { href: '/analytics', label: 'Analytics', icon: BarChart2, managerOnly: true },
+  { href: '/payment', label: 'Payment', icon: CreditCard, managerOnly: true },
   { href: '/profile', label: 'Profile', icon: User },
   { href: '/staff', label: 'Staff', icon: Users, managerOnly: true },
 ];
